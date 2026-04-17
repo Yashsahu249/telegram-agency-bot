@@ -20,11 +20,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-COMPLETIONS_API_KEY = os.getenv("COMPLETIONS_API_KEY")
-COMPLETIONS_BASE_URL = os.getenv(
-    "COMPLETIONS_BASE_URL", "https://completions.me/api/v1"
-)
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "claude-sonnet-4.5")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "llama-3.1-8b-instant")
 
 AGENTS_DIR = Path(__file__).parent / "agents"
 
@@ -41,22 +39,22 @@ where appropriate for code blocks, headers, lists, etc."""
 
 def get_available_models():
     return [
-        "claude-opus-4.6",
-        "claude-sonnet-4.6",
-        "claude-sonnet-4.5",
-        "claude-haiku-4.5",
-        "gpt-5.2",
-        "gpt-4.1",
-        "gemini-3.1-pro-preview",
-        "gemini-2.5-pro",
+        "llama-3.1-8b-instant",
+        "llama-3.1-70b-versatile",
+        "llama-3.2-1b-preview",
+        "llama-3.2-3b-preview",
+        "llama-3.2-11b-vision-preview",
+        "llama-3.2-90b-vision-preview",
+        "mixtral-8x7b-32768",
+        "gemma2-9b-it",
     ]
 
 
 def call_ai(prompt, model=None):
-    url = f"{COMPLETIONS_BASE_URL}/chat/completions"
+    url = f"{GROQ_BASE_URL}/chat/completions"
 
     headers = {
-        "Authorization": f"Bearer {COMPLETIONS_API_KEY}",
+        "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json",
     }
 
@@ -81,7 +79,6 @@ def call_ai(prompt, model=None):
             return f"API Error ({response.status_code}): {response.text[:200]}"
 
         data = response.json()
-        logger.info(f"API Response received, processing...")
 
         choices = data.get("choices", [])
         if choices and len(choices) > 0:
@@ -120,10 +117,10 @@ I provide access to specialized AI agents for various tasks:
 /start - Show this welcome message
 /agents - List all available agents
 /help - Show help information
-/setmodel - Set AI model (e.g., /setmodel claude-sonnet-4.5)
+/setmodel - Set AI model
 /models - List available models
 
-*Powered by completions.me (Unlimited Free AI)*
+*Powered by Groq AI (Free & Fast)*
 """
     await update.message.reply_text(welcome_message, parse_mode="Markdown")
 
@@ -187,9 +184,9 @@ async def agents_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def models_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     models = get_available_models()
-    models_text = "*Available Free Models:*\n\n"
+    models_text = "*Available Free Groq Models:*\n\n"
     models_text += "\n".join([f"• `{m}`" for m in models])
-    models_text += "\n\n*Default: claude-sonnet-4.5*"
+    models_text += "\n\n*Default: llama-3.1-8b-instant*"
     await update.message.reply_text(models_text, parse_mode="Markdown")
 
 
@@ -210,9 +207,7 @@ async def setmodel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📷 *Images not supported yet*\n\n"
-        "Please send your questions as text messages. "
-        "I can help with code, marketing, sales, and more!",
+        "📷 *Images not supported yet*\n\nPlease send your questions as text messages.",
         parse_mode="Markdown",
     )
 
@@ -269,14 +264,9 @@ def main():
         logger.error("TELEGRAM_BOT_TOKEN not set!")
         return
 
-    if not COMPLETIONS_API_KEY or COMPLETIONS_API_KEY == "YOUR_COMPLETIONS_KEY":
-        logger.error("COMPLETIONS_API_KEY not set!")
-        print("❌ ERROR: COMPLETIONS_API_KEY not set!")
-        print("📝 Please:")
-        print("   1. Go to https://completions.me")
-        print("   2. Sign up (free, no credit card)")
-        print("   3. Get your API key")
-        print("   4. Add it to the .env file as COMPLETIONS_API_KEY=your_key")
+    if not GROQ_API_KEY:
+        logger.error("GROQ_API_KEY not set!")
+        print("❌ ERROR: GROQ_API_KEY not set!")
         return
 
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
@@ -294,7 +284,7 @@ def main():
     print("=" * 50)
     print("🎭 THE AGENCY TELEGRAM BOT")
     print("=" * 50)
-    print("Powered by completions.me (Unlimited Free AI)")
+    print("Powered by Groq AI (Free & Fast)")
     print("Bot is running! Press Ctrl+C to stop.")
     print("=" * 50)
 
